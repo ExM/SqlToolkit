@@ -1,0 +1,88 @@
+﻿<#@ template language="C#v3.5" hostspecific="True" debug="True" 
+#><#@ output extension="cs" 
+#><#@ import namespace="System.Collections.Generic" 
+#><#
+List<TypeReaderPair> list = TypeReaderPair.CreateList(new string[]
+{
+	"Boolean",	"GetBoolean",
+	"Int16",	"GetInt16",
+	"Int32",	"GetInt32",
+	"Int64",	"GetInt64",
+	"Byte",		"GetByte",
+	"Char",		"GetChar",
+	"DateTime",	"GetDateTime",
+	"Decimal",	"GetDecimal",
+	"Double",	"GetDouble",
+	"Single",	"GetFloat",
+	"Guid",		"GetGuid"
+});
+#>using System;
+using System.Data.Common;
+using System.Linq.Expressions;
+using System.Reflection;
+
+namespace SqlToolkit
+{
+	internal static partial class DbDataReaderHelper
+	{
+		
+		public static MethodCallExpression CreateReader(ParameterExpression reader, Type columnType, int index)
+		{
+			if(columnType == typeof(string))
+			{
+				MethodInfo mi = typeof(DbDataReader).GetMethod("GetString", new Type[]{ typeof(Int32)});
+				return	Expression.Call(reader, mi, Expression.Constant(index));
+			}
+<#
+foreach(var item in list)
+{
+#>
+			else if(columnType == typeof(<#= item.Type #>))
+			{
+				MethodInfo mi = typeof(DbDataReader).GetMethod("<#= item.Method #>", new Type[]{ typeof(Int32)});
+				return	Expression.Call(reader, mi, Expression.Constant(index));
+			}
+			else if(columnType == typeof(<#= item.Type #>?))
+			{
+				MethodInfo mi = typeof(DbDataReaderHelper).GetMethod("<#= item.Method #>",
+					BindingFlags.NonPublic | BindingFlags.Static, null, new Type[]{ typeof(DbDataReader), typeof(Int32)}, null);
+				return	Expression.Call(mi, reader, Expression.Constant(index));
+			}
+<#
+};
+#>
+			else
+				throw new InvalidOperationException(string.Format("unknown type `{0}'", columnType.FullName));
+		}
+<#
+foreach(var item in list)
+{
+#>
+		
+		private static <#= item.Type #>? <#= item.Method #>(DbDataReader reader, int index)
+		{
+			if (reader.IsDBNull(index))
+				return null;
+			else
+				return reader.<#= item.Method #>(index);
+		}
+<#
+};
+#>
+	}
+}
+<#+
+public class TypeReaderPair
+{
+	public string Type;
+	public string Method;
+
+	public static List<TypeReaderPair> CreateList(string[] list)
+	{
+		List<TypeReaderPair> result = new List<TypeReaderPair>();
+		for(int i = 0; i < list.Length; i+=2)
+			result.Add(new TypeReaderPair(){Type = list[i], Method = list[i+1]});
+		return result;
+	}
+}
+#>
