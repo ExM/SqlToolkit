@@ -17,7 +17,7 @@ namespace SqlToolkit.Test
 		public readonly Column<double?> Lotitude = new Column<double?>("lot");
 		public readonly Column<bool> Verify = new Column<bool>("verify");
 		
-		public static readonly MyTable Instance = new MyTable(DbSettings.MSSQL, "table");
+		public static readonly MyTable Instance = new MyTable(DbSettings.MSSQL, "mytable");
 	}
 }
 

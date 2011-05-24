@@ -1,5 +1,5 @@
 using System;
-using ExM.SqlToolkit;
+using SqlToolkit;
 
 namespace SqlToolkit.Benchmark
 {
